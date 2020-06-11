@@ -1,5 +1,8 @@
 #Changelog
 
+###1.7.3
+add ability to take screenshots for nightwatch js framework
+
 ###1.7.2
 add ability to take screenshots for webdriver.io framework
 

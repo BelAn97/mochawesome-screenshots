@@ -46,6 +46,11 @@ For webdriver.io:
 ``` 
 framework: webdriverio
 ```
+For nightwatch.js:
+``` 
+framework: nightwatchjs
+```
+
 
 Use 'multiReport = true' for parallel test execution (adding timestamp in report file name),
  or change report name in tests or hooks for shardTestFiles option:
