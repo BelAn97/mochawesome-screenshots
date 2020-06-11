@@ -1,5 +1,8 @@
 #Changelog
 
+###1.6.1
+fix boolean options
+
 ###1.6.0
 add ability to have multiple custom screenshots with messages at the report
 
