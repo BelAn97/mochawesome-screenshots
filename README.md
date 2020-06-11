@@ -10,9 +10,7 @@ $ npm install mochawesome-screenshots --save-dev
 
 Usage remains the same as the Mocahwesome.
 
-For protractor:
-
-In your protractor configuration file:
+For protractor - configuration file example:
 ```
   framework: 'mocha',
 
@@ -40,11 +38,13 @@ For playwright and puppeteer:
 ``` 
 framework: playwright (puppeteer)
 ```
-
 For cypress:
-* Add reporterOptions:
 ``` 
 framework: cypress
+```
+For webdriver.io:
+``` 
+framework: webdriverio
 ```
 
 Use 'multiReport = true' for parallel test execution (adding timestamp in report file name),
