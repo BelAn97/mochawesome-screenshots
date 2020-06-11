@@ -1,6 +1,6 @@
 #Changelog
 
-###1.7.0
+###1.7.1
 add ability to take screenshots for different frameworks
 
 ###1.6.1
