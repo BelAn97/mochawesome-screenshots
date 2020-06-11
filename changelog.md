@@ -1,5 +1,8 @@
 #Changelog
 
+###1.7.0
+add ability to take screenshots for different frameworks
+
 ###1.6.1
 fix boolean options
 

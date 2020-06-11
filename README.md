@@ -1,6 +1,7 @@
 # mochawesome-screenshots
-This is a fork of Mochawesome(MochawesomePlusPlus) reporter with added screenshots functionality for Protractor.
-A reporter takes a screenshot after each failed Protractor test.
+This is a fork of Mochawesome(MochawesomePlusPlus) reporter with added screenshots functionality.
+
+A reporter takes a screenshot after each failed test.
 
 Installation of the module:
 ```
@@ -9,7 +10,9 @@ $ npm install mochawesome-screenshots --save-dev
 
 Usage remains the same as the Mocahwesome.
 
-In your Protractor configuration file:
+For protractor:
+
+In your protractor configuration file:
 ```
   framework: 'mocha',
 
@@ -28,6 +31,20 @@ In your Protractor configuration file:
       },
       timeout: 600000
   },
+```
+
+For playwright and puppeteer:
+
+* Make global your "page" variable.
+* Add reporterOptions:
+``` 
+framework: playwright (puppeteer)
+```
+
+For cypress:
+* Add reporterOptions:
+``` 
+framework: cypress
 ```
 
 Use 'multiReport = true' for parallel test execution (adding timestamp in report file name),

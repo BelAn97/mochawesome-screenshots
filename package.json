@@ -1,6 +1,6 @@
 {
   "name": "mochawesome-screenshots",
-  "version": "1.6.1",
+  "version": "1.7.0",
   "description": "A Gorgeous HTML/CSS Reporter for Mocha.js",
   "scripts": {
     "test": "gulp build"
@@ -15,6 +15,9 @@
     "mocha",
     "mochawesome",
     "protractor",
+    "cypress",
+    "playwright",
+    "puppeteer",
     "screenshot",
     "reporter",
     "json",
