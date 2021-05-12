@@ -50,7 +50,7 @@
   },
   "devDependencies": {
     "bootstrap": "^3.3.2",
-    "chart.js": "^1.0.1",
+    "chart.js": "^2.9.4",
     "fiveby": "^1.0.0",
     "gulp": "^3.8.1",
     "gulp-concat": "^2.4.3",
