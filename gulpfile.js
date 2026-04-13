@@ -1,5 +1,6 @@
 var gulp        = require('gulp'),
-    gutil       = require('gulp-util'),
+    log         = require('fancy-log'),
+    colors      = require('ansi-colors'),
     path        = require('path'),
     plumber     = require('gulp-plumber'),
     less        = require('gulp-less'),
@@ -19,7 +20,7 @@ var mochaOpts = {
   reporter: path.join(__dirname, 'lib', 'mochawesome'),
   timeout: 30000,
   slow: 1,
-  'no-exit': true
+  exit: false
 };
 
 var watchFiles = [
@@ -47,24 +48,39 @@ var lintPaths =  {
     '!./lib/templates.js'
   ],
   felint: [
-    path.join(config.srcJsDir, '*.js'),
-    path.join('!'+config.srcJsDir, 'lodash.custom.js')
+    './src/js/*.js',
+    '!./src/js/lodash.custom.js'
   ]
 };
 
-function onWatchFileChanged(file) {
+function onWatchFileChanged (file) {
   var ext = file.path.slice(file.path.lastIndexOf('.') + 1);
-  gutil.log(gutil.colors.yellow('Change detected in ' + file.path.replace(file.cwd, '')));
+  log(colors.yellow('Change detected in ' + file.path.replace(file.cwd, '')));
   if (ext === 'less') {
-    return gulp.start('styles');
-  }
-  if (ext === 'js') {
-    return gulp.start('clientScripts');
-  }
-  if (ext === 'mu') {
-    return gulp.start('templates');
+    gulp.series('styles')();
+  } else if (ext === 'js') {
+    gulp.series('clientScripts')();
+  } else if (ext === 'mu') {
+    gulp.series('templates')();
   }
 }
+
+// Linting
+gulp.task('svrlint', function () {
+  return gulp.src(lintPaths.lint)
+    .pipe(jshint(lintPaths.server))
+    .pipe(jshint.reporter('jshint-stylish'))
+    .pipe(jshint.reporter('fail'));
+});
+
+gulp.task('felint', function () {
+  return gulp.src(lintPaths.felint)
+    .pipe(jshint(lintPaths.client))
+    .pipe(jshint.reporter('jshint-stylish'))
+    .pipe(jshint.reporter('fail'));
+});
+
+gulp.task('lint', gulp.parallel('svrlint', 'felint'));
 
 // Build Tasks
 gulp.task('fonts', function () {
@@ -74,12 +90,12 @@ gulp.task('fonts', function () {
 
 gulp.task('styles', function () {
   return gulp.src(path.join(config.srcLessDir, '[^_]*.less'))
-    .pipe(plumber({errorHandler: gutil.log}))
+    .pipe(plumber({errorHandler: log}))
     .pipe(less({
       paths: [config.srcLessDir, config.bsLessDir, config.faLessDir],
       compress: true
     }))
-    .pipe(plumber({errorHandler: gutil.log}))
+    .pipe(plumber({errorHandler: log}))
     .pipe(gulp.dest(config.buildCssDir));
 });
 
@@ -91,12 +107,12 @@ gulp.task('vendorScripts', function () {
     .pipe(gulp.dest(config.buildJsDir));
 });
 
-gulp.task('clientScripts', ['lint'], function () {
+gulp.task('clientScripts', gulp.series('lint', function () {
   return gulp.src(config.clientJsFiles)
     .pipe(concat('mochawesome.js'))
     .pipe(uglify())
     .pipe(gulp.dest(config.buildJsDir));
-});
+}));
 
 gulp.task('templates', function () {
   var partials = gulp.src(path.join(config.srcHbsDir, '_*.mu'))
@@ -152,7 +168,7 @@ gulp.task('felint', function () {
 
 // Watch Tasks
 gulp.task('watch', function () {
-  watch(watchFiles, onWatchFileChanged);
+  watch(watchFiles, gulp.series(onWatchFileChanged));
 });
 
 // Test Tasks
@@ -202,12 +218,8 @@ gulp.task('testOpts2', function () {
 });
 
 // Default/Combo Tasks
-gulp.task('build', ['lint'], function () {
-  return gulp.start('assemble');
-});
+gulp.task('assemble', gulp.parallel('fonts', 'styles', 'clientScripts', 'vendorScripts', 'templates'));
 
-gulp.task('lint', ['svrlint', 'felint']);
+gulp.task('build', gulp.series('lint', gulp.parallel('assemble')));
 
-gulp.task('assemble', ['fonts', 'styles', 'clientScripts', 'vendorScripts', 'templates']);
-
-gulp.task('default', ['test']);
+gulp.task('default', gulp.series('test'));
