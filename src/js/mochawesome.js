@@ -68,6 +68,23 @@
     }
     this.$window.on('resize', _.debounce(self._onWindowResize.bind(self), 200));
     this.makeSuiteCharts();
+    this.setupToggleButtons();
+  };
+
+  Mochawesome.prototype.setupToggleButtons = function () {
+    // Use event delegation for toggle buttons
+    $(document).on('click', '.toggle-btn', function() {
+      var $btn = $(this);
+      var $span = $btn.find('.btn-text');
+      
+      // Toggle text immediately on click
+      var currentText = $span.text();
+      if (currentText.indexOf('Show') === 0) {
+        $span.text(currentText.replace('Show', 'Hide'));
+      } else {
+        $span.text(currentText.replace('Hide', 'Show'));
+      }
+    });
   };
 
   Mochawesome.prototype._setMeasurements = function () {

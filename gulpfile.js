@@ -1,225 +1,263 @@
-var gulp        = require('gulp'),
-    log         = require('fancy-log'),
-    colors      = require('ansi-colors'),
-    path        = require('path'),
-    plumber     = require('gulp-plumber'),
-    less        = require('gulp-less'),
-    uglify      = require('gulp-uglify'),
-    jshint      = require('gulp-jshint'),
-    concat      = require('gulp-concat'),
-    merge       = require('merge-stream'),
-    handlebars  = require('gulp-handlebars'),
-    wrap        = require('gulp-wrap'),
-    declare     = require('gulp-declare'),
-    watch       = require('gulp-watch'),
-    mocha       = require('gulp-mocha'),
-    spawnmocha  = require('gulp-spawn-mocha'),
-    config      = require('./lib/config')();
+/**
+ * Gulp Build System - Modern ES6+ syntax
+ * Gulp 4+ with clean task definitions
+ */
 
-var mochaOpts = {
+'use strict';
+
+const gulp = require('gulp');
+const log = require('fancy-log');
+const colors = require('ansi-colors');
+const path = require('path');
+const plumber = require('gulp-plumber');
+const less = require('gulp-less');
+const uglify = require('gulp-uglify');
+const jshint = require('gulp-jshint');
+const concat = require('gulp-concat');
+const merge = require('merge-stream');
+const handlebars = require('gulp-handlebars');
+const wrap = require('gulp-wrap');
+const declare = require('gulp-declare');
+const watch = require('gulp-watch');
+const mocha = require('gulp-mocha');
+const config = require('./lib/config')();
+
+// Mocha options
+const mochaOpts = {
   reporter: path.join(__dirname, 'lib', 'mochawesome'),
   timeout: 30000,
   slow: 1,
   exit: false
 };
 
-var watchFiles = [
+// Watch files
+const watchFiles = [
   path.join(config.srcLessDir, '*.less'),
   path.join(config.srcJsDir, '*.js'),
   path.join('!', config.srcJsDir, 'hbsHelpers.js'),
   path.join(config.srcHbsDir, '*.mu')
 ];
 
-var testPaths = {
+// Test paths
+const testPaths = {
   basic: ['./test/basic/test.js'],
   mem: ['./test/basic/mem-test.js'],
   recursive: ['./test/basic'],
-  fiveby: [
-    './test/fiveby/*.js',
-    './test/fiveby/**/*.js'
-  ]
+  fiveby: ['./test/fiveby/*.js', './test/fiveby/**/*.js']
 };
 
-var lintPaths =  {
+// Lint paths
+const lintPaths = {
   server: './.jshintrc',
   client: './client.jshintrc',
-  lint: [
-    './lib/*.js',
-    '!./lib/templates.js'
-  ],
-  felint: [
-    './src/js/*.js',
-    '!./src/js/lodash.custom.js'
-  ]
+  lint: ['./lib/*.js', '!./lib/templates.js', '!./lib/mochawesome.js'],
+  felint: ['./src/js/*.js', '!./src/js/lodash.custom.js']
 };
 
-function onWatchFileChanged (file) {
-  var ext = file.path.slice(file.path.lastIndexOf('.') + 1);
-  log(colors.yellow('Change detected in ' + file.path.replace(file.cwd, '')));
-  if (ext === 'less') {
-    gulp.series('styles')();
-  } else if (ext === 'js') {
-    gulp.series('clientScripts')();
-  } else if (ext === 'mu') {
-    gulp.series('templates')();
+/**
+ * Watch file change handler
+ */
+function onWatchFileChanged(file) {
+  const ext = file.path.slice(file.path.lastIndexOf('.') + 1);
+  log(colors.yellow(`Change detected in ${file.path.replace(file.cwd, '')}`));
+
+  const taskMap = {
+    less: 'styles',
+    js: 'clientScripts',
+    mu: 'templates'
+  };
+
+  if (taskMap[ext]) {
+    gulp.series(taskMap[ext])();
   }
 }
 
-// Linting
-gulp.task('svrlint', function () {
-  return gulp.src(lintPaths.lint)
-    .pipe(jshint(lintPaths.server))
-    .pipe(jshint.reporter('jshint-stylish'))
-    .pipe(jshint.reporter('fail'));
-});
+// ============================================
+// LINTING TASKS
+// ============================================
 
-gulp.task('felint', function () {
-  return gulp.src(lintPaths.felint)
-    .pipe(jshint(lintPaths.client))
-    .pipe(jshint.reporter('jshint-stylish'))
-    .pipe(jshint.reporter('fail'));
-});
+/**
+ * Lint server-side JS
+ */
+const svrlint = () => gulp
+  .src(lintPaths.lint)
+  .pipe(jshint(lintPaths.server))
+  .pipe(jshint.reporter('jshint-stylish'))
+  .pipe(jshint.reporter('fail'));
 
-gulp.task('lint', gulp.parallel('svrlint', 'felint'));
+/**
+ * Lint client-side JS
+ */
+const felint = () => gulp
+  .src(lintPaths.felint)
+  .pipe(jshint(lintPaths.client))
+  .pipe(jshint.reporter('jshint-stylish'))
+  .pipe(jshint.reporter('fail'));
 
-// Build Tasks
-gulp.task('fonts', function () {
-  return gulp.src(path.join(config.srcFontsDir, '*'))
-    .pipe(gulp.dest(config.buildFontsDir));
-});
+/**
+ * Run all linting
+ */
+const lint = gulp.parallel(svrlint, felint);
 
-gulp.task('styles', function () {
-  return gulp.src(path.join(config.srcLessDir, '[^_]*.less'))
-    .pipe(plumber({errorHandler: log}))
-    .pipe(less({
-      paths: [config.srcLessDir, config.bsLessDir, config.faLessDir],
-      compress: true
-    }))
-    .pipe(plumber({errorHandler: log}))
-    .pipe(gulp.dest(config.buildCssDir));
-});
+// ============================================
+// BUILD TASKS
+// ============================================
 
+/**
+ * Copy fonts
+ */
+const fonts = () => gulp
+  .src(path.join(config.srcFontsDir, '*'))
+  .pipe(gulp.dest(config.buildFontsDir));
 
-gulp.task('vendorScripts', function () {
-  return gulp.src(config.vendorJsFiles)
-    .pipe(concat('vendor.js'))
-    .pipe(uglify())
-    .pipe(gulp.dest(config.buildJsDir));
-});
+/**
+ * Compile LESS to CSS
+ */
+const styles = () => gulp
+  .src(path.join(config.srcLessDir, '[^_]*.less'))
+  .pipe(plumber({ errorHandler: log }))
+  .pipe(less({
+    paths: [config.srcLessDir, config.bsLessDir, config.faLessDir],
+    compress: true
+  }))
+  .pipe(plumber({ errorHandler: log }))
+  .pipe(gulp.dest(config.buildCssDir));
 
-gulp.task('clientScripts', gulp.series('lint', function () {
-  return gulp.src(config.clientJsFiles)
-    .pipe(concat('mochawesome.js'))
-    .pipe(uglify())
-    .pipe(gulp.dest(config.buildJsDir));
-}));
+/**
+ * Concat and minify vendor scripts
+ */
+const vendorScripts = () => gulp
+  .src(config.vendorJsFiles)
+  .pipe(concat('vendor.js'))
+  .pipe(uglify())
+  .pipe(gulp.dest(config.buildJsDir));
 
-gulp.task('templates', function () {
-  var partials = gulp.src(path.join(config.srcHbsDir, '_*.mu'))
+/**
+ * Concat and minify client scripts
+ */
+const clientScripts = gulp.series(lint, () => gulp
+  .src(config.clientJsFiles)
+  .pipe(concat('mochawesome.js'))
+  .pipe(uglify())
+  .pipe(gulp.dest(config.buildJsDir)));
+
+/**
+ * Compile Handlebars templates
+ */
+const templates = () => {
+  const partials = gulp
+    .src(path.join(config.srcHbsDir, '_*.mu'))
     .pipe(handlebars({
       handlebars: require('handlebars'),
-      compilerOptions: {
-        preventIndent: true
-      }
+      compilerOptions: { preventIndent: true }
     }))
-    .pipe(wrap('Handlebars.registerPartial(<%= processPartialName(file.relative) %>, Handlebars.template(<%= contents %>));', {}, {
-      imports: {
-        processPartialName: function(fileName) {
-          // Strip the extension
-          // Escape the output with JSON.stringify
-          return JSON.stringify(path.basename(fileName, '.js'));
+    .pipe(wrap(
+      'Handlebars.registerPartial(<%= processPartialName(file.relative) %>, Handlebars.template(<%= contents %>));',
+      {},
+      {
+        imports: {
+          processPartialName: (fileName) => JSON.stringify(path.basename(fileName, '.js'))
         }
       }
-    }));
+    ));
 
-  var templates = gulp.src(path.join(config.srcHbsDir, '[^_]*.mu'))
+  const templateFiles = gulp
+    .src(path.join(config.srcHbsDir, '[^_]*.mu'))
     .pipe(handlebars())
     .pipe(wrap('Handlebars.template(<%= contents %>)'))
     .pipe(declare({
       root: 'exports',
-      noRedeclare: true, // Avoid duplicate declarations
-      processName: function(filePath) {
-        return declare.processNameByPath(filePath.replace('src/templates/'.replace(/\//g, path.sep), ''));
-      }
+      noRedeclare: true,
+      processName: (filePath) => declare.processNameByPath(
+        filePath.replace('src/templates/'.replace(/\//g, path.sep), '')
+      )
     }));
 
-  var helpers = gulp.src(path.join(config.srcJsDir, 'hbsHelpers.js'));
+  const helpers = gulp.src(path.join(config.srcJsDir, 'hbsHelpers.js'));
 
-  return merge(partials, templates, helpers)
+  return merge(partials, templateFiles, helpers)
     .pipe(concat('templates.js'))
     .pipe(wrap('var Handlebars = require("handlebars");\n <%= contents %>'))
     .pipe(gulp.dest(config.libDir));
-});
+};
 
-// Linting
-gulp.task('svrlint', function () {
-  return gulp.src(lintPaths.lint)
-    .pipe(jshint(lintPaths.server))
-    .pipe(jshint.reporter('jshint-stylish'))
-    .pipe(jshint.reporter('fail'));
-});
+// ============================================
+// WATCH TASKS
+// ============================================
 
-gulp.task('felint', function () {
-  return gulp.src(lintPaths.felint)
-    .pipe(jshint(lintPaths.client))
-    .pipe(jshint.reporter('jshint-stylish'))
-    .pipe(jshint.reporter('fail'));
-});
+/**
+ * Watch for file changes
+ */
+const watchTask = () => {
+  watch(watchFiles, onWatchFileChanged);
+};
 
-// Watch Tasks
-gulp.task('watch', function () {
-  watch(watchFiles, gulp.series(onWatchFileChanged));
-});
+// ============================================
+// TEST TASKS
+// ============================================
 
-// Test Tasks
-gulp.task('fiveby', function () {
-  return gulp.src(testPaths.fiveby)
-    .pipe(spawnmocha(mochaOpts))
-    .on('error', console.warn.bind(console));
-});
+/**
+ * Run basic tests
+ */
+const test = () => gulp
+  .src(testPaths.basic)
+  .pipe(mocha(mochaOpts))
+  .on('error', console.warn.bind(console));
 
-gulp.task('test', function () {
-  return gulp.src(testPaths.basic)
-    .pipe(mocha(mochaOpts))
-    .on('error', console.warn.bind(console));
-});
+/**
+ * Run memory tests
+ */
+const memTest = () => gulp
+  .src(testPaths.mem)
+  .pipe(mocha(mochaOpts))
+  .on('error', console.warn.bind(console));
 
-gulp.task('mem-test', function () {
-  return gulp.src(testPaths.mem)
-    .pipe(mocha(mochaOpts))
-    .on('error', console.warn.bind(console));
-});
-
-gulp.task('test-recursive', function () {
+/**
+ * Run recursive tests
+ */
+const testRecursive = () => {
   mochaOpts.recursive = true;
-  return gulp.src(testPaths.recursive)
+  return gulp
+    .src(testPaths.recursive)
     .pipe(mocha(mochaOpts))
     .on('error', console.warn.bind(console));
-});
+};
 
-gulp.task('testOpts', function () {
-  mochaOpts.reporterOptions = {
-    reportDir: 'customDir',
-    reportName: 'customName',
-    reportTitle: 'customTitle',
-    inlineAssets: true,
-    autoOpen: true
-  };
-  return gulp.src(testPaths.basic)
-    .pipe(mocha(mochaOpts))
-    .on('error', console.warn.bind(console));
-});
+// ============================================
+// COMPOSITE TASKS
+// ============================================
 
-gulp.task('testOpts2', function () {
-  mochaOpts.reporterOptions = 'reportDir=customDir,reportName=customName,reportTitle=customTitle,inlineAssets=true,autoOpen=true';
-  return gulp.src(testPaths.basic)
-    .pipe(spawnmocha(mochaOpts))
-    .on('error', console.warn.bind(console));
-});
+/**
+ * Assemble all build artifacts
+ */
+const assemble = gulp.parallel(fonts, styles, clientScripts, vendorScripts, templates);
 
-// Default/Combo Tasks
-gulp.task('assemble', gulp.parallel('fonts', 'styles', 'clientScripts', 'vendorScripts', 'templates'));
+/**
+ * Full build (lint + assemble)
+ */
+const build = gulp.series(lint, assemble);
 
-gulp.task('build', gulp.series('lint', gulp.parallel('assemble')));
+/**
+ * Default task (run tests)
+ */
+const defaultTask = gulp.series(test);
 
-gulp.task('default', gulp.series('test'));
+// ============================================
+// EXPORT TASKS
+// ============================================
+
+exports.fonts = fonts;
+exports.styles = styles;
+exports.vendorScripts = vendorScripts;
+exports.clientScripts = clientScripts;
+exports.templates = templates;
+exports.svrlint = svrlint;
+exports.felint = felint;
+exports.lint = lint;
+exports.watch = watchTask;
+exports.test = test;
+exports.memTest = memTest;
+exports.testRecursive = testRecursive;
+exports.assemble = assemble;
+exports.build = build;
+exports.default = defaultTask;
