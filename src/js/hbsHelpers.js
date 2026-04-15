@@ -1,11 +1,15 @@
-/*global Handlebars, __dirname*/
-var moment = require('moment');
-var path = require('path');
-var fs = require('fs');
+/* global Handlebars, __dirname */
+/* jshint strict: false, esversion: 6 */
+
+(function () {
+  'use strict';
+
+  const moment = require('moment');
+  const path = require('node:path');
+  const fs = require('node:fs');
 
 function getDurationObj(durationInMilliseconds) {
-  'use strict';
-  var dur = moment.duration(durationInMilliseconds, 'ms');
+  const dur = moment.duration(durationInMilliseconds, 'ms');
   return {
     duration: dur,
     hrs: dur.get('h'),
@@ -16,19 +20,16 @@ function getDurationObj(durationInMilliseconds) {
 }
 
 Handlebars.registerHelper('isBlank', function (context, options) {
-  'use strict';
   return context === '' ? options.fn(this) : options.inverse(this);
 });
 
 Handlebars.registerHelper('getPlural', function (context) {
-  'use strict';
   return context === 1 ? '' : 's';
 });
 
 Handlebars.registerHelper('formatSummaryDuration', function (context) {
-  'use strict';
-  var dur = getDurationObj(context);
-  if (dur.hrs  < 1) {
+  const dur = getDurationObj(context);
+  if (dur.hrs < 1) {
     if (dur.min < 1) {
       if (dur.sec < 1) {
         return context;
@@ -41,9 +42,8 @@ Handlebars.registerHelper('formatSummaryDuration', function (context) {
 });
 
 Handlebars.registerHelper('getSummaryDurationUnits', function (context) {
-  'use strict';
-  var dur = getDurationObj(context);
-  if (dur.hrs  < 1) {
+  const dur = getDurationObj(context);
+  if (dur.hrs < 1) {
     if (dur.min < 1) {
       if (dur.sec < 1) {
         return 'MS';
@@ -56,9 +56,8 @@ Handlebars.registerHelper('getSummaryDurationUnits', function (context) {
 });
 
 Handlebars.registerHelper('formatDuration', function (context) {
-  'use strict';
-  var dur = getDurationObj(context);
-  if (dur.hrs  < 1) {
+  const dur = getDurationObj(context);
+  if (dur.hrs < 1) {
     if (dur.min < 1) {
       if (dur.sec < 1) {
         return context + ' ms';
@@ -70,25 +69,26 @@ Handlebars.registerHelper('formatDuration', function (context) {
   return dur.hrs + ':' + (dur.min < 10 ? ('0' + dur.min) : dur.min) + ':' + (dur.sec < 10 ? ('0' + dur.sec) : dur.sec) + '.' + dur.ms + ' h';
 });
 
-Handlebars.registerHelper('dateFormat', function(context, format) {
-  'use strict';
+Handlebars.registerHelper('dateFormat', function (context, format) {
   if (format === 'fromNow') {
     return moment(context).fromNow();
-  } else {
-    return moment(context).format(format);
   }
+  return moment(context).format(format);
 });
 
-Handlebars.registerHelper('inlineAsset', function(context) {
-  'use strict';
-  var distDir = path.join(__dirname, '..', 'dist');
+Handlebars.registerHelper('inlineAsset', function (context) {
+  const distDir = path.join(__dirname, '..', 'dist');
   switch (context) {
     case 'styles':
       return fs.readFileSync(path.join(distDir, 'css', 'mochawesome-64.css'));
-
-    case 'scripts':
-      var vendorScripts = fs.readFileSync(path.join(distDir, 'js', 'vendor.js'));
-      var mochawesomeScript = fs.readFileSync(path.join(distDir, 'js', 'mochawesome.js'));
+    case 'scripts': {
+      const vendorScripts = fs.readFileSync(path.join(distDir, 'js', 'vendor.js'));
+      const mochawesomeScript = fs.readFileSync(path.join(distDir, 'js', 'mochawesome.js'));
       return vendorScripts + '\n' + mochawesomeScript;
+    }
+    default:
+      return '';
   }
 });
+
+})();

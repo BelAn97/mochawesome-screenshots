@@ -1,17 +1,16 @@
-/* global window */
-/* global Chart */
-/* global _ */
-+function ($, Chart, _) {
+/* jshint strict: false */
+/* global window, Chart, _ */
+
+(function ($, Chart, _) {
   'use strict';
+  let self;
 
-  var self;
-
-  var Mochawesome = function () {
+  const Mochawesome = function () {
     this.filterClasses = 'filter-passed filter-failed filter-pending';
     this.activeFilters = [];
 
     this.chartOpts = {
-      percentageInnerCutout : 60,
+      percentageInnerCutout: 60,
       segmentShowStroke: true,
       segmentStrokeWidth: 2,
       animationEasing: 'easeOutQuint',
@@ -20,9 +19,9 @@
     };
 
     this.chartColors = {
-      green:  '#5cb85c',
-      red:    '#d9534f',
-      gray:   '#999999',
+      green: '#5cb85c',
+      red: '#d9534f',
+      gray: '#999999',
       ltGray: '#CCCCCC',
       ltBlue: '#5bc0de'
     };
@@ -34,27 +33,25 @@
     };
 
     // Cache Elements
-    this.$window      = $(window);
-    this.$body        = $('body');
-    this.$navbar      = $('.navbar');
-    this.$navOpenBtn  = $('.nav-menu-btn.open-menu');
+    this.$window = $(window);
+    this.$body = $('body');
+    this.$navbar = $('.navbar');
+    this.$navOpenBtn = $('.nav-menu-btn.open-menu');
     this.$navCloseBtn = $('.close-menu');
-    this.$navMenu     = $('.nav-menu-wrap');
+    this.$navMenu = $('.nav-menu-wrap');
     this.$navMenuLink = $('.nav-menu-item-link');
-    this.$summary     = $('.summary');
-    this.$statusBar   = $('.statusbar');
-    this.$quickSum    = $('.quick-summary');
-    this.$details     = $('.details');
-    this.$suites      = $('.suite');
-    this.$filterBtns  = $('[data-filter]');
+    this.$summary = $('.summary');
+    this.$statusBar = $('.statusbar');
+    this.$quickSum = $('.quick-summary');
+    this.$details = $('.details');
+    this.$suites = $('.suite');
+    this.$filterBtns = $('[data-filter]');
     this.$suiteCharts = $('.suite-chart');
 
     this._setMeasurements();
-
     this.listeningToScroll = this.windowWidth >= this.breakpoints.sm;
 
     self = this;
-
     this.initialize();
   };
 
@@ -63,22 +60,22 @@
     this.$navOpenBtn.on('click', self.openNavMenu.bind(self));
     this.$navCloseBtn.on('click', self.closeNavMenu.bind(self));
     this.$navMenuLink.on('click', self.goToSuite.bind(self));
+
     if (this.windowWidth > this.breakpoints.sm) {
       this.listenToScroll(true);
     }
+
     this.$window.on('resize', _.debounce(self._onWindowResize.bind(self), 200));
     this.makeSuiteCharts();
     this.setupToggleButtons();
   };
 
   Mochawesome.prototype.setupToggleButtons = function () {
-    // Use event delegation for toggle buttons
-    $(document).on('click', '.toggle-btn', function() {
-      var $btn = $(this);
-      var $span = $btn.find('.btn-text');
-      
-      // Toggle text immediately on click
-      var currentText = $span.text();
+    $(document).on('click', '.toggle-btn', function () {
+      const $btn = $(this);
+      const $span = $btn.find('.btn-text');
+      const currentText = $span.text();
+
       if (currentText.indexOf('Show') === 0) {
         $span.text(currentText.replace('Show', 'Hide'));
       } else {
@@ -95,32 +92,40 @@
   };
 
   Mochawesome.prototype._onFilterClick = function (e) {
-    var $el = $(e.currentTarget);
-    // No clicks for hidden quick summary
+    const $el = $(e.currentTarget);
+
     if ($el.hasClass('qs-item') && this.$quickSum.css('opacity') === '0') {
       return;
     }
-    var filter = $el.data('filter'),
-        $btns = $('[data-filter=' + filter + ']'),
-        filterIndex = this.activeFilters.indexOf(filter),
-        filterIsActive = filterIndex !== -1;
 
-    filterIsActive ? this.activeFilters.splice(filterIndex, 1) : this.activeFilters.push(filter);
+    const filter = $el.data('filter');
+    const $btns = $('[data-filter=' + filter + ']');
+    const filterIndex = this.activeFilters.indexOf(filter);
+    const filterIsActive = filterIndex !== -1;
+
+    if (filterIsActive) {
+      this.activeFilters.splice(filterIndex, 1);
+    } else {
+      this.activeFilters.push(filter);
+    }
+
     $btns.toggleClass('active', !filterIsActive);
-
     this.updateFilteredTests();
   };
 
   Mochawesome.prototype._onWindowScroll = function () {
     this._setMeasurements();
+
     if (this.scrolledPastQuickSummaryOffset && this.$body.hasClass('show-quick-summary')) {
       return;
     }
+
     this.$body.toggleClass('show-quick-summary', this.scrolledPastQuickSummaryOffset);
   };
 
   Mochawesome.prototype._onWindowResize = function () {
     this._setMeasurements();
+
     if (this.windowWidth < this.breakpoints.sm && this.listeningToScroll) {
       this.listenToScroll(false);
     } else if (this.windowWidth >= this.breakpoints.sm && !this.listeningToScroll) {
@@ -143,8 +148,8 @@
 
   Mochawesome.prototype.goToSuite = function (e) {
     e.preventDefault();
-    var offset = this._getScrollOffset();
-    var scrollY = $(e.currentTarget.getAttribute('href')).offset().top - offset;
+    const offset = this._getScrollOffset();
+    const scrollY = $(e.currentTarget.getAttribute('href')).offset().top - offset;
     window.scrollTo(0, scrollY);
     this.closeNavMenu();
   };
@@ -166,9 +171,9 @@
   };
 
   Mochawesome.prototype.updateFilteredTests = function () {
-    var activeFiltersExist = this.activeFilters.length > 0,
-        filterClassesToAdd = this._createFilterClasses('filter-'),
-        testClassesToFilter = this._createFilterClasses('.');
+    const activeFiltersExist = this.activeFilters.length > 0;
+    const filterClassesToAdd = this._createFilterClasses('filter-');
+    const testClassesToFilter = this._createFilterClasses('.');
 
     this.$details
       .removeClass(this.filterClasses)
@@ -178,14 +183,12 @@
       this.$details.addClass(filterClassesToAdd.join(' '));
     }
 
-    // Hide all suites
     this.$suites.toggleClass('hidden', activeFiltersExist);
 
-    // Show suites with filtered tests
     if (activeFiltersExist) {
-      for (var i = this.$suites.length - 1; i >= 0; i--) {
-        var $suite = this.$suites.eq(i),
-            hasVisibleTests = $suite.find('.test').filter(testClassesToFilter.join()).length > 0;
+      for (let i = this.$suites.length - 1; i >= 0; i--) {
+        const $suite = this.$suites.eq(i);
+        const hasVisibleTests = $suite.find('.test').filter(testClassesToFilter.join()).length > 0;
         if (hasVisibleTests) {
           $suite.removeClass('hidden');
         }
@@ -194,44 +197,27 @@
   };
 
   Mochawesome.prototype.makeSuiteCharts = function () {
-    // Don't animate if we have a ton of charts because its just slow and ugly
     if (this.$suiteCharts.length > 50) {
       this.chartOpts.animation = false;
     }
 
-    for (var i = 0; i < this.$suiteCharts.length; i++) {
-      var $chart = this.$suiteCharts.eq(i),
-          ctx = $chart[0].getContext('2d'),
-          data = $chart.data(),
-          chartData = [{
-            value: data.totalPasses*10,
-            color: this.chartColors.green,
-            highlight: this.chartColors.gray,
-            label: 'Passed'
-          },
-          {
-            value: data.totalFailures*10,
-            color: this.chartColors.red,
-            highlight: this.chartColors.gray,
-            label: 'Failed'
-          },
-          {
-            value: data.totalPending*10,
-            color: this.chartColors.ltBlue,
-            highlight: this.chartColors.gray,
-            label: 'Pending'
-          },
-          {
-            value: data.totalSkipped*10,
-            color: this.chartColors.ltGray,
-            highlight: this.chartColors.gray,
-            label: 'Skipped'
-          }];
-      new Chart(ctx).Doughnut(chartData, this.chartOpts);
+    for (let i = 0; i < this.$suiteCharts.length; i++) {
+      const $chart = this.$suiteCharts.eq(i);
+      const ctx = $chart[0].getContext('2d');
+      const data = $chart.data();
+
+      const chartData = [
+        { value: data.totalPasses * 10, color: this.chartColors.green, highlight: this.chartColors.gray, label: 'Passed' },
+        { value: data.totalFailures * 10, color: this.chartColors.red, highlight: this.chartColors.gray, label: 'Failed' },
+        { value: data.totalPending * 10, color: this.chartColors.ltBlue, highlight: this.chartColors.gray, label: 'Pending' },
+        { value: data.totalSkipped * 10, color: this.chartColors.ltGray, highlight: this.chartColors.gray, label: 'Skipped' }
+      ];
+
+      const chart = new Chart(ctx);
+      chart.Doughnut(chartData, this.chartOpts);
     }
   };
 
-  
   new Mochawesome();
-  
-}(jQuery, Chart, _);
+
+})(jQuery, Chart, _);

@@ -35,6 +35,7 @@
   "debug"         : false,     // true: Allow debugger statements e.g. browser breakpoints.
   "eqnull"        : false,     // true: Tolerate use of `== null`
   "es5"           : false,     // true: Allow ES5 syntax (ex: getters and setters)
+  "esversion"     : 6,         // Allow ES6 syntax (ex: `const`, `let`)
   "esnext"        : false,     // true: Allow ES.next (ES6) syntax (ex: `const`)
   "moz"           : false,     // true: Allow Mozilla specific syntax (extends and overrides esnext features)
   // (ex: `for each`, multiple try/catch, function expression…)
@@ -84,8 +85,35 @@
     "spyOn": true,
     "unescape": true,
     "waits": true,
-    "waitsFor": true,    
+    "waitsFor": true,
     "require": true,
-    "DJ": true
+    "DJ": true,
+    "chromium": true,
+    "page": true,
+    "log": true,
+    "setScreenshot": true,
+    "test": true,
+    "expect": true,
+    "should": true,
+    "before": true,
+    "after": true,
+    "beforeEach": true,
+    "afterEach": true,
+    "global": true,
+    "window": true,
+    "document": true,
+    "process": true,
+    "console": true,
+    "Buffer": true,
+    "TextDecoder": true,
+    "TextEncoder": true,
+    "URL": true,
+    "URLSearchParams": true,
+    "fetch": true,
+    "Headers": true,
+    "Request": true,
+    "Response": true,
+    "AbortController": true,
+    "AbortSignal": true
   }
 }

@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "description": "A Gorgeous HTML/CSS Reporter for Mocha.js with Screenshot Support",
   "scripts": {
-    "test": "gulp build",
+    "test": "gulp test",
     "test:watch": "gulp watch",
     "build": "gulp build",
     "lint": "gulp lint"
@@ -41,6 +41,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
+    "@playwright/test": "^1.59.1",
     "bootstrap": "^3.4.1",
     "chart.js": "^1.1.1",
     "eslint": "^9.12.0",

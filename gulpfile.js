@@ -1,6 +1,5 @@
 /**
- * Gulp Build System - Modern ES6+ syntax
- * Gulp 4+ with clean task definitions
+ * Gulp Build System
  */
 
 'use strict';
@@ -8,7 +7,7 @@
 const gulp = require('gulp');
 const log = require('fancy-log');
 const colors = require('ansi-colors');
-const path = require('path');
+const path = require('node:path');
 const plumber = require('gulp-plumber');
 const less = require('gulp-less');
 const uglify = require('gulp-uglify');
@@ -22,97 +21,55 @@ const watch = require('gulp-watch');
 const mocha = require('gulp-mocha');
 const config = require('./lib/config')();
 
-// Mocha options
-const mochaOpts = {
+const MOCHA_OPTS = {
   reporter: path.join(__dirname, 'lib', 'mochawesome'),
   timeout: 30000,
   slow: 1,
   exit: false
 };
 
-// Watch files
-const watchFiles = [
+const WATCH_FILES = [
   path.join(config.srcLessDir, '*.less'),
   path.join(config.srcJsDir, '*.js'),
   path.join('!', config.srcJsDir, 'hbsHelpers.js'),
   path.join(config.srcHbsDir, '*.mu')
 ];
 
-// Test paths
-const testPaths = {
-  basic: ['./test/basic/test.js'],
-  mem: ['./test/basic/mem-test.js'],
-  recursive: ['./test/basic'],
-  fiveby: ['./test/fiveby/*.js', './test/fiveby/**/*.js']
-};
-
-// Lint paths
-const lintPaths = {
+const LINT_PATHS = {
   server: './.jshintrc',
   client: './client.jshintrc',
   lint: ['./lib/*.js', '!./lib/templates.js', '!./lib/mochawesome.js'],
   felint: ['./src/js/*.js', '!./src/js/lodash.custom.js']
 };
 
-/**
- * Watch file change handler
- */
-function onWatchFileChanged(file) {
-  const ext = file.path.slice(file.path.lastIndexOf('.') + 1);
-  log(colors.yellow(`Change detected in ${file.path.replace(file.cwd, '')}`));
-
-  const taskMap = {
-    less: 'styles',
-    js: 'clientScripts',
-    mu: 'templates'
-  };
-
-  if (taskMap[ext]) {
-    gulp.series(taskMap[ext])();
-  }
-}
+const processPartialName = (fileName) => JSON.stringify(path.basename(fileName, '.js'));
 
 // ============================================
 // LINTING TASKS
 // ============================================
 
-/**
- * Lint server-side JS
- */
 const svrlint = () => gulp
-  .src(lintPaths.lint)
-  .pipe(jshint(lintPaths.server))
+  .src(LINT_PATHS.lint)
+  .pipe(jshint(LINT_PATHS.server))
   .pipe(jshint.reporter('jshint-stylish'))
   .pipe(jshint.reporter('fail'));
 
-/**
- * Lint client-side JS
- */
 const felint = () => gulp
-  .src(lintPaths.felint)
-  .pipe(jshint(lintPaths.client))
+  .src(LINT_PATHS.felint)
+  .pipe(jshint(LINT_PATHS.client))
   .pipe(jshint.reporter('jshint-stylish'))
   .pipe(jshint.reporter('fail'));
 
-/**
- * Run all linting
- */
 const lint = gulp.parallel(svrlint, felint);
 
 // ============================================
 // BUILD TASKS
 // ============================================
 
-/**
- * Copy fonts
- */
 const fonts = () => gulp
   .src(path.join(config.srcFontsDir, '*'))
   .pipe(gulp.dest(config.buildFontsDir));
 
-/**
- * Compile LESS to CSS
- */
 const styles = () => gulp
   .src(path.join(config.srcLessDir, '[^_]*.less'))
   .pipe(plumber({ errorHandler: log }))
@@ -123,27 +80,18 @@ const styles = () => gulp
   .pipe(plumber({ errorHandler: log }))
   .pipe(gulp.dest(config.buildCssDir));
 
-/**
- * Concat and minify vendor scripts
- */
 const vendorScripts = () => gulp
   .src(config.vendorJsFiles)
   .pipe(concat('vendor.js'))
   .pipe(uglify())
   .pipe(gulp.dest(config.buildJsDir));
 
-/**
- * Concat and minify client scripts
- */
 const clientScripts = gulp.series(lint, () => gulp
   .src(config.clientJsFiles)
   .pipe(concat('mochawesome.js'))
   .pipe(uglify())
   .pipe(gulp.dest(config.buildJsDir)));
 
-/**
- * Compile Handlebars templates
- */
 const templates = () => {
   const partials = gulp
     .src(path.join(config.srcHbsDir, '_*.mu'))
@@ -154,11 +102,7 @@ const templates = () => {
     .pipe(wrap(
       'Handlebars.registerPartial(<%= processPartialName(file.relative) %>, Handlebars.template(<%= contents %>));',
       {},
-      {
-        imports: {
-          processPartialName: (fileName) => JSON.stringify(path.basename(fileName, '.js'))
-        }
-      }
+      { imports: { processPartialName } }
     ));
 
   const templateFiles = gulp
@@ -169,7 +113,7 @@ const templates = () => {
       root: 'exports',
       noRedeclare: true,
       processName: (filePath) => declare.processNameByPath(
-        filePath.replace('src/templates/'.replace(/\//g, path.sep), '')
+        filePath.replace('src/templates/'.replaceAll('/', path.sep), '')
       )
     }));
 
@@ -181,69 +125,47 @@ const templates = () => {
     .pipe(gulp.dest(config.libDir));
 };
 
+const assemble = gulp.parallel(fonts, styles, clientScripts, vendorScripts, templates);
+const build = gulp.series(lint, assemble);
+
 // ============================================
 // WATCH TASKS
 // ============================================
 
-/**
- * Watch for file changes
- */
-const watchTask = () => {
-  watch(watchFiles, onWatchFileChanged);
+const TASK_MAP = { less: 'styles', js: 'clientScripts', mu: 'templates' };
+
+const onWatchFileChanged = (file) => {
+  const ext = file.path.slice(file.path.lastIndexOf('.') + 1);
+  log(colors.yellow(`Change detected in ${file.path.replace(file.cwd, '')}`));
+
+  if (TASK_MAP[ext]) {
+    gulp.series(TASK_MAP[ext])();
+  }
 };
+
+const watchTask = () => watch(WATCH_FILES, onWatchFileChanged);
 
 // ============================================
 // TEST TASKS
 // ============================================
 
-/**
- * Run basic tests
- */
 const test = () => gulp
-  .src(testPaths.basic)
-  .pipe(mocha(mochaOpts))
+  .src(['./test/smoke/playwright-smoke.js'])
+  .pipe(mocha(MOCHA_OPTS))
   .on('error', console.warn.bind(console));
 
-/**
- * Run memory tests
- */
 const memTest = () => gulp
-  .src(testPaths.mem)
-  .pipe(mocha(mochaOpts))
+  .src(['./test/basic/mem-test.js'])
+  .pipe(mocha(MOCHA_OPTS))
   .on('error', console.warn.bind(console));
 
-/**
- * Run recursive tests
- */
-const testRecursive = () => {
-  mochaOpts.recursive = true;
-  return gulp
-    .src(testPaths.recursive)
-    .pipe(mocha(mochaOpts))
-    .on('error', console.warn.bind(console));
-};
+const testRecursive = () => gulp
+  .src(['./test/basic'], { read: false })
+  .pipe(mocha({ ...MOCHA_OPTS, recursive: true }))
+  .on('error', console.warn.bind(console));
 
 // ============================================
-// COMPOSITE TASKS
-// ============================================
-
-/**
- * Assemble all build artifacts
- */
-const assemble = gulp.parallel(fonts, styles, clientScripts, vendorScripts, templates);
-
-/**
- * Full build (lint + assemble)
- */
-const build = gulp.series(lint, assemble);
-
-/**
- * Default task (run tests)
- */
-const defaultTask = gulp.series(test);
-
-// ============================================
-// EXPORT TASKS
+// EXPORTS
 // ============================================
 
 exports.fonts = fonts;
@@ -260,4 +182,4 @@ exports.memTest = memTest;
 exports.testRecursive = testRecursive;
 exports.assemble = assemble;
 exports.build = build;
-exports.default = defaultTask;
+exports.default = test;

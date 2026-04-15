@@ -43,21 +43,20 @@
   margin: 0 8px;
   border-bottom: 1px solid transparent;
   float: left;
-}
 
-// Filter Btns
-.qs-item[data-filter] {
-  .transition(border .2s ease-out);
-}
-
-// Icons / Colors
-.qs-item {
   &:before {
     .ma-icon();
     top: 1px;
     font-size: 15px;
     margin-right: 4px;
   }
+
+  // Filter Btns
+  &[data-filter] {
+    .transition(border .2s ease-out);
+  }
+
+  // Icons / Colors
   &.summary-suites {
     .qsColor(@gray-lighter);
     .fontIcon(@ma-icon-suites);

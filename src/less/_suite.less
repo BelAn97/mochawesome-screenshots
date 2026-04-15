@@ -36,16 +36,6 @@
 .suite {
   .clearfix();
   .make-row();
-}
-.suite-test-wrap {
-  .make-xs-column(12);
-}
-.suite-data-wrap {
-  .clearfix();
-}
-
-// Suite Base
-.suite {
   position: relative;
   border: 1px solid @gray-border;
   padding: 8px 0 10px 0;
@@ -64,6 +54,49 @@
     margin-top: 4px;
     padding: 0 10px;
   }
+}
+
+.suite-test-wrap {
+  .make-xs-column(12);
+
+  .suite-test-header {
+    padding: 4px 8px 6px 8px;
+    cursor: pointer;
+    border-top: 1px solid @list-group-border;
+    border-bottom: 1px solid @list-group-border;
+    .suite-test-header-title {
+      .fontSlabNormal();
+      font-size: 16px;
+      color: #ccc;
+      margin: 0;
+      .linkTransition();
+
+      &:after {
+        .transition(transform .2s ease-out);
+        .ma-icon();
+        content: @ma-icon-right-chevron;
+        position: absolute;
+        font-size: 20px;
+        right: 15px;
+        .rotate(90deg);
+      }
+    }
+    &.collapsed {
+      .suite-test-header-title:after {
+        .rotate(0);
+      }
+    }
+    &:hover .suite-test-header-title {
+      color: @gray-dark;
+    }
+  }
+  .test-list {
+    margin-bottom: 0;
+  }
+}
+
+.suite-data-wrap {
+  .clearfix();
 }
 
 .details > .suite-wrap > .suite {
@@ -148,44 +181,6 @@
     &.pending {
       .filterActive(@brand-info);
     }
-  }
-}
-
-// Suite Test
-.suite-test-wrap {
-  .suite-test-header {
-    padding: 4px 8px 6px 8px;
-    cursor: pointer;
-    border-top: 1px solid @list-group-border;
-    border-bottom: 1px solid @list-group-border;
-    .suite-test-header-title {
-      .fontSlabNormal();
-      font-size: 16px;
-      color: #ccc;
-      margin: 0;
-      .linkTransition();
-
-      &:after {
-        .transition(transform .2s ease-out);
-        .ma-icon();
-        content: @ma-icon-right-chevron;
-        position: absolute;
-        font-size: 20px;
-        right: 15px;
-        .rotate(90deg);
-      }
-    }
-    &.collapsed {
-      .suite-test-header-title:after {
-        .rotate(0);
-      }
-    }
-    &:hover .suite-test-header-title {
-      color: @gray-dark;
-    }
-  }
-  .test-list {
-    margin-bottom: 0;
   }
 }
 
