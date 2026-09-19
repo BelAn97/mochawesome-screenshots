@@ -1,0 +1,8 @@
+dist/
+node_modules/
+src/generated/
+test-results/
+mochawesome-reports/
+docs/
+*.md
+package-lock.json

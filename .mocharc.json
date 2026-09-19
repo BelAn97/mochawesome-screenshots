@@ -1,0 +1,5 @@
+{
+  "reporter": "./dist/cjs/mochawesome.cjs",
+  "timeout": 30000,
+  "slow": 1
+}

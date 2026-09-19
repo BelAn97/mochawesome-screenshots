@@ -7,8 +7,8 @@
     </h4>
     {{^pending}}
     <div class="pull-right">
-      {{#scr}}<button type="button" class="btn btn-link btn-sm toggle-btn toggle-scr collapsed" data-toggle="collapse" data-target="#{{../uuid}} .test-scr" aria-expanded="false"><span class="btn-text">Show Screenshot</span></button>{{/scr}}
-      {{#code}}<button type="button" class="btn btn-link btn-sm toggle-btn toggle-code collapsed" data-toggle="collapse" data-target="#{{../uuid}} .test-code" aria-expanded="false"><span class="btn-text">Show Code</span></button>{{/code}}
+      {{#scr}}<button type="button" class="btn btn-link btn-sm toggle-btn toggle-scr collapsed" data-toggle="collapse" data-target="[id='{{../uuid}}'] .test-scr" aria-expanded="false"><span class="btn-text">Show Screenshot</span></button>{{/scr}}
+      {{#code}}<button type="button" class="btn btn-link btn-sm toggle-btn toggle-code collapsed" data-toggle="collapse" data-target="[id='{{../uuid}}'] .test-code" aria-expanded="false"><span class="btn-text">Show Code</span></button>{{/code}}
       <span class="test-duration {{speed}}">{{formatDuration duration}}</span>
     </div>
     {{/pending}}
@@ -16,7 +16,7 @@
   <!-- Test Errors -->
   {{#err}}
     <p class="test-error-message">{{name}}: {{message}}
-      <button type="button" class="btn btn-link btn-sm toggle-btn toggle-stack collapsed" data-toggle="collapse" data-target="#{{../uuid}} .test-error-stack" aria-expanded="false"><span class="btn-text">Show Stack</span></button>
+      <button type="button" class="btn btn-link btn-sm toggle-btn toggle-stack collapsed" data-toggle="collapse" data-target="[id='{{../uuid}}'] .test-error-stack" aria-expanded="false"><span class="btn-text">Show Stack</span></button>
     </p>
   {{/err}}
   <!-- Test Code -->

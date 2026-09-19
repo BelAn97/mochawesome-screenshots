@@ -3,9 +3,9 @@
  * Each section contains: passing, failing, and pending tests
  */
 
-const { chromium } = require('playwright');
-const should = require('should');
-const { log, setScreenshot } = require('../../lib/logReport');
+import { chromium } from 'playwright';
+import 'should';
+import { log } from 'mochawesome-screenshots/logReport';
 
 let browser;
 let context;
@@ -16,7 +16,7 @@ const TEST_URL = 'https://playwright.dev/';
 // Setup
 before('launch browser', async function () {
   this.timeout(30000);
-  browser = await chromium.launch({ 
+  browser = await chromium.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   });
@@ -74,13 +74,13 @@ describe('API Tests', function () {
   it('should load with custom log data', async function () {
     await page.goto(TEST_URL, { waitUntil: 'domcontentloaded', timeout: 30000 });
     const url = page.url();
-    
+
     log(this, {
       url: url,
       timestamp: new Date().toISOString(),
       status: 'success'
     });
-    
+
     url.should.startWith('https://');
   });
 
@@ -97,6 +97,7 @@ describe('Hook Tests', function () {
   this.timeout(30000);
 
   before('failing before hook', function () {
+    // eslint-disable-next-line no-undef -- deliberate ReferenceError to exercise hook failure reporting
     console.log(notDefinedVariable);
   });
 

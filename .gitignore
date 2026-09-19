@@ -1,6 +1,11 @@
 .DS_Store
 .idea
+.vscode
+.qwen
 lib-cov
+lib
+dist
+src/generated
 *.seed
 *.log
 *.csv
@@ -16,6 +21,7 @@ results
 node_modules
 
 mochawesome-reports
+test-results
 
 npm-debug.log
 

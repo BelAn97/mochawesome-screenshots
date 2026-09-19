@@ -1,105 +1,119 @@
-/* jshint strict: false */
-/* global window, Chart, _ */
+/**
+ * Mochawesome report client script.
+ * Vanilla JS + Chart.js 4 (bundled by esbuild at build time).
+ */
 
-(function ($, Chart, _) {
-  'use strict';
-  let self;
+import Chart from 'chart.js/auto';
 
-  const Mochawesome = function () {
-    this.filterClasses = 'filter-passed filter-failed filter-pending';
+const BREAKPOINTS = { sm: 768 };
+const SCROLL_OFFSET = { mobile: 199, desktop: 89 };
+const FILTER_CLASSES = 'filter-passed filter-failed filter-pending';
+
+const debounce = (fn, ms) => {
+  let timer;
+  return (...args) => {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn(...args), ms);
+  };
+};
+
+const throttle = (fn, ms) => {
+  let lastCall = 0;
+  let timer;
+  return (...args) => {
+    const now = Date.now();
+    const remaining = ms - (now - lastCall);
+    if (remaining <= 0) {
+      clearTimeout(timer);
+      timer = undefined;
+      lastCall = now;
+      fn(...args);
+    } else if (!timer) {
+      timer = setTimeout(() => {
+        lastCall = Date.now();
+        timer = undefined;
+        fn(...args);
+      }, remaining);
+    }
+  };
+};
+
+class MochawesomeReport {
+  constructor() {
     this.activeFilters = [];
-
-    this.chartOpts = {
-      percentageInnerCutout: 60,
-      segmentShowStroke: true,
-      segmentStrokeWidth: 2,
-      animationEasing: 'easeOutQuint',
-      showTooltips: false,
-      responsive: true
-    };
 
     this.chartColors = {
       green: '#5cb85c',
       red: '#d9534f',
-      gray: '#999999',
       ltGray: '#CCCCCC',
       ltBlue: '#5bc0de'
     };
 
-    this.breakpoints = {
-      sm: 768,
-      md: 992,
-      lg: 1200
-    };
+    // Cached elements
+    this.body = document.body;
+    this.navbar = document.querySelector('.navbar');
+    this.navOpenBtn = document.querySelector('.nav-menu-btn.open-menu');
+    this.navMenu = document.querySelector('.nav-menu-wrap');
+    this.summary = document.querySelector('.summary');
+    this.quickSum = document.querySelector('.quick-summary');
+    this.details = document.querySelector('.details');
+    this.suites = Array.from(document.querySelectorAll('.suite'));
+    this.filterBtns = Array.from(document.querySelectorAll('[data-filter]'));
 
-    // Cache Elements
-    this.$window = $(window);
-    this.$body = $('body');
-    this.$navbar = $('.navbar');
-    this.$navOpenBtn = $('.nav-menu-btn.open-menu');
-    this.$navCloseBtn = $('.close-menu');
-    this.$navMenu = $('.nav-menu-wrap');
-    this.$navMenuLink = $('.nav-menu-item-link');
-    this.$summary = $('.summary');
-    this.$statusBar = $('.statusbar');
-    this.$quickSum = $('.quick-summary');
-    this.$details = $('.details');
-    this.$suites = $('.suite');
-    this.$filterBtns = $('[data-filter]');
-    this.$suiteCharts = $('.suite-chart');
-
-    this._setMeasurements();
-    this.listeningToScroll = this.windowWidth >= this.breakpoints.sm;
-
-    self = this;
+    this.measure();
     this.initialize();
-  };
+  }
 
-  Mochawesome.prototype.initialize = function () {
-    this.$filterBtns.on('click', self._onFilterClick.bind(self));
-    this.$navOpenBtn.on('click', self.openNavMenu.bind(self));
-    this.$navCloseBtn.on('click', self.closeNavMenu.bind(self));
-    this.$navMenuLink.on('click', self.goToSuite.bind(self));
+  initialize() {
+    for (const btn of this.filterBtns) {
+      btn.addEventListener('click', (event) => this.onFilterClick(event));
+    }
+    this.navOpenBtn?.addEventListener('click', () => this.openNavMenu());
+    for (const closeBtn of document.querySelectorAll('.close-menu')) {
+      closeBtn.addEventListener('click', () => this.closeNavMenu());
+    }
+    for (const link of document.querySelectorAll('.nav-menu-item-link')) {
+      link.addEventListener('click', (event) => this.goToSuite(event));
+    }
 
-    if (this.windowWidth > this.breakpoints.sm) {
+    if (this.windowWidth >= BREAKPOINTS.sm) {
       this.listenToScroll(true);
     }
 
-    this.$window.on('resize', _.debounce(self._onWindowResize.bind(self), 200));
+    window.addEventListener('resize', debounce(() => this.onWindowResize(), 200));
+    document.addEventListener(
+      'click',
+      (event) => {
+        const toggle = event.target.closest('[data-toggle="collapse"]');
+        if (toggle) this.onCollapseToggle(toggle);
+      },
+      false
+    );
+
     this.makeSuiteCharts();
-    this.setupToggleButtons();
-  };
+  }
 
-  Mochawesome.prototype.setupToggleButtons = function () {
-    $(document).on('click', '.toggle-btn', function () {
-      const $btn = $(this);
-      const $span = $btn.find('.btn-text');
-      const currentText = $span.text();
-
-      if (currentText.indexOf('Show') === 0) {
-        $span.text(currentText.replace('Show', 'Hide'));
-      } else {
-        $span.text(currentText.replace('Hide', 'Show'));
-      }
-    });
-  };
-
-  Mochawesome.prototype._setMeasurements = function () {
-    this.windowWidth = this.$window.outerWidth();
-    this.windowScrollTop = this.$window.scrollTop();
-    this.quickSummaryScrollOffset = this.$summary.outerHeight() - this.$navbar.outerHeight();
+  measure() {
+    this.windowWidth = window.innerWidth;
+    this.windowScrollTop = window.scrollY;
+    this.quickSummaryScrollOffset =
+      (this.summary?.offsetHeight ?? 0) - (this.navbar?.offsetHeight ?? 0);
     this.scrolledPastQuickSummaryOffset = this.windowScrollTop > this.quickSummaryScrollOffset;
-  };
+  }
 
-  Mochawesome.prototype._onFilterClick = function (e) {
-    const $el = $(e.currentTarget);
+  onFilterClick(event) {
+    const el = event.currentTarget;
 
-    if ($el.hasClass('qs-item') && this.$quickSum.css('opacity') === '0') {
+    if (
+      el.classList.contains('qs-item') &&
+      this.quickSum &&
+      getComputedStyle(this.quickSum).opacity === '0'
+    ) {
       return;
     }
 
-    const filter = $el.data('filter');
-    const $btns = $('[data-filter=' + filter + ']');
+    const filter = el.getAttribute('data-filter');
+    const btns = document.querySelectorAll(`[data-filter="${filter}"]`);
     const filterIndex = this.activeFilters.indexOf(filter);
     const filterIsActive = filterIndex !== -1;
 
@@ -109,115 +123,161 @@
       this.activeFilters.push(filter);
     }
 
-    $btns.toggleClass('active', !filterIsActive);
+    for (const btn of btns) {
+      btn.classList.toggle('active', !filterIsActive);
+    }
     this.updateFilteredTests();
-  };
+  }
 
-  Mochawesome.prototype._onWindowScroll = function () {
-    this._setMeasurements();
+  onWindowScroll() {
+    this.measure();
 
-    if (this.scrolledPastQuickSummaryOffset && this.$body.hasClass('show-quick-summary')) {
+    if (this.scrolledPastQuickSummaryOffset && this.body.classList.contains('show-quick-summary')) {
       return;
     }
 
-    this.$body.toggleClass('show-quick-summary', this.scrolledPastQuickSummaryOffset);
-  };
+    this.body.classList.toggle('show-quick-summary', this.scrolledPastQuickSummaryOffset);
+  }
 
-  Mochawesome.prototype._onWindowResize = function () {
-    this._setMeasurements();
+  onWindowResize() {
+    this.measure();
 
-    if (this.windowWidth < this.breakpoints.sm && this.listeningToScroll) {
+    if (this.windowWidth < BREAKPOINTS.sm && this.listeningToScroll) {
       this.listenToScroll(false);
-    } else if (this.windowWidth >= this.breakpoints.sm && !this.listeningToScroll) {
+    } else if (this.windowWidth >= BREAKPOINTS.sm && !this.listeningToScroll) {
       this.listenToScroll(true);
-      this.$body.toggleClass('show-quick-summary', this.scrolledPastQuickSummaryOffset);
+      this.body.classList.toggle('show-quick-summary', this.scrolledPastQuickSummaryOffset);
     }
-  };
+  }
 
-  Mochawesome.prototype._getScrollOffset = function () {
-    return this.windowWidth < this.breakpoints.sm ? 199 : 89;
-  };
+  getScrollOffset() {
+    return this.windowWidth < BREAKPOINTS.sm ? SCROLL_OFFSET.mobile : SCROLL_OFFSET.desktop;
+  }
 
-  Mochawesome.prototype.openNavMenu = function () {
-    this.$navMenu.addClass('open');
-  };
+  openNavMenu() {
+    this.navMenu?.classList.add('open');
+  }
 
-  Mochawesome.prototype.closeNavMenu = function () {
-    this.$navMenu.removeClass('open');
-  };
+  closeNavMenu() {
+    this.navMenu?.classList.remove('open');
+  }
 
-  Mochawesome.prototype.goToSuite = function (e) {
-    e.preventDefault();
-    const offset = this._getScrollOffset();
-    const scrollY = $(e.currentTarget.getAttribute('href')).offset().top - offset;
+  goToSuite(event) {
+    event.preventDefault();
+    const href = event.currentTarget.getAttribute('href') ?? '';
+    const target = href.startsWith('#') ? document.getElementById(href.slice(1)) : null;
+    if (!target) return;
+    const scrollY = target.getBoundingClientRect().top + window.scrollY - this.getScrollOffset();
     window.scrollTo(0, scrollY);
     this.closeNavMenu();
-  };
+  }
 
-  Mochawesome.prototype.listenToScroll = function (start) {
+  listenToScroll(start) {
     if (start) {
-      this.$window.on('scroll', _.throttle(self._onWindowScroll.bind(self), 200));
+      if (!this.scrollHandler) {
+        this.scrollHandler = throttle(() => this.onWindowScroll(), 200);
+      }
+      window.addEventListener('scroll', this.scrollHandler);
     } else {
-      this.$window.off('scroll');
-      this.$body.removeClass('show-quick-summary');
+      window.removeEventListener('scroll', this.scrollHandler);
+      this.body.classList.remove('show-quick-summary');
     }
     this.listeningToScroll = start;
-  };
+  }
 
-  Mochawesome.prototype._createFilterClasses = function (prefix) {
-    return this.activeFilters.map(function (activeFilter) {
-      return prefix + activeFilter;
-    });
-  };
+  /**
+   * Minimal replacement of the Bootstrap 3 collapse plugin.
+   * Toggles `in` on the data-target elements and keeps the button's
+   * `collapsed` class / aria-expanded state and Show/Hide text in sync.
+   */
+  onCollapseToggle(toggle) {
+    const targetSelector = toggle.getAttribute('data-target');
+    if (!targetSelector) return;
 
-  Mochawesome.prototype.updateFilteredTests = function () {
-    const activeFiltersExist = this.activeFilters.length > 0;
-    const filterClassesToAdd = this._createFilterClasses('filter-');
-    const testClassesToFilter = this._createFilterClasses('.');
-
-    this.$details
-      .removeClass(this.filterClasses)
-      .toggleClass('filters-active', activeFiltersExist);
-
-    if (filterClassesToAdd.length) {
-      this.$details.addClass(filterClassesToAdd.join(' '));
+    const targets = document.querySelectorAll(targetSelector);
+    let nowOpen = false;
+    for (const target of targets) {
+      nowOpen = target.classList.toggle('in');
     }
 
-    this.$suites.toggleClass('hidden', activeFiltersExist);
+    toggle.classList.toggle('collapsed', !nowOpen);
+    toggle.setAttribute('aria-expanded', String(nowOpen));
+
+    const text = toggle.querySelector('.btn-text');
+    if (text) {
+      if (nowOpen) {
+        text.textContent = text.textContent.replace('Show', 'Hide');
+      } else {
+        text.textContent = text.textContent.replace('Hide', 'Show');
+      }
+    }
+  }
+
+  updateFilteredTests() {
+    const activeFiltersExist = this.activeFilters.length > 0;
+    const filterClassesToAdd = this.activeFilters.map((filter) => `filter-${filter}`);
+
+    if (this.details) {
+      this.details.classList.remove(...FILTER_CLASSES.split(' '));
+      this.details.classList.toggle('filters-active', activeFiltersExist);
+      this.details.classList.add(...filterClassesToAdd);
+    }
+
+    for (const suite of this.suites) {
+      suite.classList.toggle('hidden', activeFiltersExist);
+    }
 
     if (activeFiltersExist) {
-      for (let i = this.$suites.length - 1; i >= 0; i--) {
-        const $suite = this.$suites.eq(i);
-        const hasVisibleTests = $suite.find('.test').filter(testClassesToFilter.join()).length > 0;
-        if (hasVisibleTests) {
-          $suite.removeClass('hidden');
+      // Tests carry their result as a class (.passed/.failed/.pending); the CSS
+      // pairs .filters-active with .suite.has-* to reveal matching suites.
+      const visibleTestSelector = this.activeFilters.map((filter) => `.test.${filter}`).join(',');
+      for (let i = this.suites.length - 1; i >= 0; i--) {
+        const suite = this.suites[i];
+        if (suite.querySelector(visibleTestSelector)) {
+          suite.classList.remove('hidden');
         }
       }
     }
-  };
+  }
 
-  Mochawesome.prototype.makeSuiteCharts = function () {
-    if (this.$suiteCharts.length > 50) {
-      this.chartOpts.animation = false;
+  makeSuiteCharts() {
+    const canvases = Array.from(document.querySelectorAll('canvas.suite-chart'));
+
+    for (const canvas of canvases) {
+      const data = canvas.dataset;
+      new Chart(canvas, {
+        type: 'doughnut',
+        data: {
+          labels: ['Passed', 'Failed', 'Pending', 'Skipped'],
+          datasets: [
+            {
+              data: [
+                Number(data.totalPasses) || 0,
+                Number(data.totalFailures) || 0,
+                Number(data.totalPending) || 0,
+                Number(data.totalSkipped) || 0
+              ],
+              backgroundColor: [
+                this.chartColors.green,
+                this.chartColors.red,
+                this.chartColors.ltBlue,
+                this.chartColors.ltGray
+              ],
+              borderColor: '#fff',
+              borderWidth: 2
+            }
+          ]
+        },
+        options: {
+          cutout: '60%',
+          responsive: true,
+          events: [],
+          animation: canvases.length > 50 ? false : { duration: 800, easing: 'easeOutQuint' },
+          plugins: { tooltip: { enabled: false }, legend: { display: false } }
+        }
+      });
     }
+  }
+}
 
-    for (let i = 0; i < this.$suiteCharts.length; i++) {
-      const $chart = this.$suiteCharts.eq(i);
-      const ctx = $chart[0].getContext('2d');
-      const data = $chart.data();
-
-      const chartData = [
-        { value: data.totalPasses * 10, color: this.chartColors.green, highlight: this.chartColors.gray, label: 'Passed' },
-        { value: data.totalFailures * 10, color: this.chartColors.red, highlight: this.chartColors.gray, label: 'Failed' },
-        { value: data.totalPending * 10, color: this.chartColors.ltBlue, highlight: this.chartColors.gray, label: 'Pending' },
-        { value: data.totalSkipped * 10, color: this.chartColors.ltGray, highlight: this.chartColors.gray, label: 'Skipped' }
-      ];
-
-      const chart = new Chart(ctx);
-      chart.Doughnut(chartData, this.chartOpts);
-    }
-  };
-
-  new Mochawesome();
-
-})(jQuery, Chart, _);
+new MochawesomeReport();

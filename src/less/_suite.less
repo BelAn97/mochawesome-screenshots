@@ -75,9 +75,10 @@
         .transition(transform .2s ease-out);
         .ma-icon();
         content: @ma-icon-right-chevron;
-        position: absolute;
+        display: inline-block;
         font-size: 20px;
-        right: 15px;
+        margin-left: 8px;
+        vertical-align: -4px;
         .rotate(90deg);
       }
     }
@@ -109,6 +110,8 @@
   position: absolute;
   top: 12px;
   right: 12px;
+  z-index: 1;
+  background-color: #fff;
 }
 
 // Suite Chart Legend

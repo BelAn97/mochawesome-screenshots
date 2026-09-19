@@ -1,7 +1,0 @@
-{
-  "esversion": 11,
-  "node": true,
-  "strict": false,
-  "loopfunc": true,
-  "expr": true
-}

@@ -11,7 +11,7 @@
     {{#hasTests}} 
     <!-- Suite Chart -->
     <div class="suite-chart-wrap">
-      <canvas id="{{uuid}}" class="suite-chart" width="50" height="50" data-total-passes="{{totalPasses}}" data-total-failures="{{totalFailures}}" data-total-pending="{{totalPending}}" data-total-skipped="{{totalSkipped}}"></canvas>
+      <canvas id="{{uuid}}-chart" class="suite-chart" width="50" height="50" data-total-passes="{{totalPasses}}" data-total-failures="{{totalFailures}}" data-total-pending="{{totalPending}}" data-total-skipped="{{totalSkipped}}"></canvas>
     </div>
     <div class="suite-data-wrap">
       <!-- Suite Summary -->
@@ -24,7 +24,7 @@
       </ul>
       <!-- Test Info -->
       <div class="suite-test-wrap">
-        <div class="suite-test-header" data-toggle="collapse" data-target="#{{uuid}}-test-list">
+        <div class="suite-test-header" data-toggle="collapse" data-target="[id='{{uuid}}-test-list']">
           <h4 class="suite-test-header-title">Tests</h4>
         </div>
         <div id="{{uuid}}-test-list" class="list-group test-list collapse in">
