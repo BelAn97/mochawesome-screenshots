@@ -1,6 +1,6 @@
 #Changelog
 
-###2.1.0
+###2.0.0
 migrated to strict TypeScript with a dual CJS + ESM build (tsup) and type declarations
 modernized the build pipeline: precompiled Handlebars templates, LESS styles, esbuild client bundle, no gulp/jshint/lodash
 added unit tests (node:test), a Playwright smoke suite and a GitHub Actions CI workflow
