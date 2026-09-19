@@ -63,7 +63,8 @@
     "./package.json": "./package.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "changelog.md"
   ],
   "dependencies": {
     "dayjs": "^1.11.13",

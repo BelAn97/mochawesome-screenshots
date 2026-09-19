@@ -1,5 +1,12 @@
 #Changelog
 
+###2.1.0
+migrated to strict TypeScript with a dual CJS + ESM build (tsup) and type declarations
+modernized the build pipeline: precompiled Handlebars templates, LESS styles, esbuild client bundle, no gulp/jshint/lodash
+added unit tests (node:test), a Playwright smoke suite and a GitHub Actions CI workflow
+requires Node.js >= 20 and Mocha >= 10
+fixed ui issues: screenshot toggles on passed tests, element ids in toggles and nav menu, reportPageTitle as the browser tab title, chart artifacts
+
 ###1.7.3
 add ability to take screenshots for nightwatch js framework
 

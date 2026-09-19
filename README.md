@@ -142,3 +142,7 @@ test/unit/      unit tests (node:test runner)
 ```
 
 CI runs lint, build and tests on Node 20/22/24 via GitHub Actions.
+
+## Changelog
+
+See [changelog.md](./changelog.md).
